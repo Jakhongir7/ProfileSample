@@ -15,24 +15,17 @@ namespace ProfileSample.Controllers
         {
             var context = new ProfileSampleEntities();
 
-            var sources = context.ImgSources.Take(20).Select(x => x.Id);
-            
-            var model = new List<ImageModel>();
+            // Retrieve the first 20 image sources with a single query
+            var sources = context.ImgSources
+                                 .Take(20)
+                                 .Select(x => new ImageModel
+                                 {
+                                     Name = x.Name,
+                                     Data = x.Data
+                                 })
+                                 .ToList();
 
-            foreach (var id in sources)
-            {
-                var item = context.ImgSources.Find(id);
-
-                var obj = new ImageModel()
-                {
-                    Name = item.Name,
-                    Data = item.Data
-                };
-
-                model.Add(obj);
-            } 
-
-            return View(model);
+            return View(sources);
         }
 
         public ActionResult Convert()
@@ -41,6 +34,8 @@ namespace ProfileSample.Controllers
 
             using (var context = new ProfileSampleEntities())
             {
+                var imgSources = new List<ImgSource>();
+
                 foreach (var file in files)
                 {
                     using (var stream = new FileStream(file, FileMode.Open))
@@ -55,10 +50,12 @@ namespace ProfileSample.Controllers
                             Data = buff,
                         };
 
-                        context.ImgSources.Add(entity);
-                        context.SaveChanges();
+                        imgSources.Add(entity);
                     }
-                } 
+                }
+
+                context.ImgSources.AddRange(imgSources);
+                context.SaveChanges();
             }
 
             return RedirectToAction("Index");
